@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ping Pong – Saubere Version</title>
+<title>Ping Pong – Flüssig & KI</title>
 <style>
 body {margin:0; background:linear-gradient(180deg,#0b1220,#040a14); color:#fff; font-family:sans-serif; display:flex; justify-content:center; align-items:center; height:100vh;}
 #menu, #gameWrap {display:none;}
@@ -95,11 +95,36 @@ const ctx=canvas.getContext("2d");
 let leftY=210, rightY=210, ballX=450, ballY=250, vx=5, vy=3;
 let leftScore=0, rightScore=0, ai=false, aiLevel="medium", gameRunning=false;
 
+// Tastenstatus für flüssige Bewegung
+let keys = {w:false,s:false,up:false,down:false};
+window.addEventListener("keydown", e=>{
+  if(e.key==="w") keys.w=true;
+  if(e.key==="s") keys.s=true;
+  if(e.key==="ArrowUp") keys.up=true;
+  if(e.key==="ArrowDown") keys.down=true;
+});
+window.addEventListener("keyup", e=>{
+  if(e.key==="w") keys.w=false;
+  if(e.key==="s") keys.s=false;
+  if(e.key==="ArrowUp") keys.up=false;
+  if(e.key==="ArrowDown") keys.down=false;
+});
+
 // clamp Funktion
 function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
 
+// Paddle-Bewegung
+function updatePaddles(){
+  const speed = 5; // Geschwindigkeit pro Frame
+  leftY = clamp(leftY + (keys.s?speed:0) - (keys.w?speed:0), 0, canvas.height-80);
+  if(!ai) rightY = clamp(rightY + (keys.down?speed:0) - (keys.up?speed:0), 0, canvas.height-80);
+}
+
 // Spiel Loop
 function draw(){
+  if(!gameRunning) return;
+  updatePaddles();
+
   ctx.clearRect(0,0,900,500);
   ctx.fillStyle="#fff";
   ctx.fillRect(10,leftY,10,80);
@@ -126,14 +151,17 @@ function draw(){
   if(ballX<0){ rightScore++; resetBall();}
   if(ballX>900){ leftScore++; resetBall();}
 
-  // KI-Bewegung
+  // KI-Bewegung (realistisch)
   if(ai){
+    const paddleCenter = rightY + 40;
+    const errorFactor = aiLevel==="easy" ? 30 : aiLevel==="medium" ? 15 : 5;
     const speed = aiLevel==="easy"?2:(aiLevel==="medium"?4:6);
-    if(rightY+40<ballY) rightY=clamp(rightY+speed,0,canvas.height-80);
-    else if(rightY+40>ballY) rightY=clamp(rightY-speed,0,canvas.height-80);
+    const targetY = clamp(ballY - 40 + (Math.random()*errorFactor*2 - errorFactor), 0, canvas.height-80);
+    if(paddleCenter < targetY) rightY = clamp(rightY + speed, 0, canvas.height-80);
+    else if(paddleCenter > targetY) rightY = clamp(rightY - speed, 0, canvas.height-80);
   }
 
-  if(gameRunning) requestAnimationFrame(draw);
+  requestAnimationFrame(draw);
 }
 
 // Ball zurücksetzen & Gewinn prüfen
@@ -156,16 +184,6 @@ function checkWin(){
     gameWrap.style.display="none";
   }
 }
-
-// --- Steuerung ---
-window.addEventListener("keydown",e=>{
-  if(e.key==="w") leftY = clamp(leftY-20,0,canvas.height-80);
-  if(e.key==="s") leftY = clamp(leftY+20,0,canvas.height-80);
-  if(!ai){
-    if(e.key==="ArrowUp") rightY = clamp(rightY-20,0,canvas.height-80);
-    if(e.key==="ArrowDown") rightY = clamp(rightY+20,0,canvas.height-80);
-  }
-});
 
 // Neustart
 document.getElementById("restartBtn").onclick=()=>{
