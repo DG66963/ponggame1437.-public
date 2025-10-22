@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ping Pong – Menü, KI & Highscore</title>
+<title>Ping Pong – Saubere Version</title>
 <style>
 body {margin:0; background:linear-gradient(180deg,#0b1220,#040a14); color:#fff; font-family:sans-serif; display:flex; justify-content:center; align-items:center; height:100vh;}
 #menu, #gameWrap {display:none;}
@@ -58,6 +58,7 @@ input {padding:10px; border-radius:6px; border:none; text-align:center; font-siz
 </div>
 
 <script>
+// --- Codeprüfung ---
 const codeScreen=document.getElementById("codeScreen");
 const menu=document.getElementById("menu");
 const gameWrap=document.getElementById("gameWrap");
@@ -70,6 +71,7 @@ document.getElementById("codeBtn").onclick=()=>{
   } else err.style.display="block";
 };
 
+// --- Menü & Highscore ---
 const modeSelect=document.getElementById("modeSelect");
 const aiBox=document.getElementById("aiBox");
 const aiSelect=document.getElementById("aiSelect");
@@ -87,12 +89,16 @@ function updateHighscore(){
   highscoreText.textContent="Highscore: "+hs;
 }
 
-// === SPIEL ===
+// --- SPIEL ---
 const canvas=document.getElementById("game");
 const ctx=canvas.getContext("2d");
 let leftY=210, rightY=210, ballX=450, ballY=250, vx=5, vy=3;
 let leftScore=0, rightScore=0, ai=false, aiLevel="medium", gameRunning=false;
 
+// clamp Funktion
+function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
+
+// Spiel Loop
 function draw(){
   ctx.clearRect(0,0,900,500);
   ctx.fillStyle="#fff";
@@ -106,29 +112,33 @@ function draw(){
   ctx.fillText(leftScore,400,30);
   ctx.fillText(rightScore,480,30);
 
+  // Ball bewegen
   ballX+=vx; ballY+=vy;
 
-  if(ballY<0||ballY>500) vy*=-1;
-  if(ballX<20&&ballY>leftY&&ballY<leftY+80) vx*=-1;
-  if(ballX>870&&ballY>rightY&&ballY<rightY+80) vx*=-1;
+  // Kollisionsprüfung oben/unten
+  if(ballY<0 || ballY>500) vy*=-1;
 
-  if(ballX<0){ rightScore++; resetBall(); }
-  if(ballX>900){ leftScore++; resetBall(); }
+  // Paddle-Kollision
+  if(ballX<20 && ballY>leftY && ballY<leftY+80) vx*=-1;
+  if(ballX>870 && ballY>rightY && ballY<rightY+80) vx*=-1;
 
-  // KI bewegt sich
+  // Punkte
+  if(ballX<0){ rightScore++; resetBall();}
+  if(ballX>900){ leftScore++; resetBall();}
+
+  // KI-Bewegung
   if(ai){
-    const target = ballY - 40;
     const speed = aiLevel==="easy"?2:(aiLevel==="medium"?4:6);
-    if(rightY+40<ballY) rightY+=speed;
-    else if(rightY+40>ballY) rightY-=speed;
+    if(rightY+40<ballY) rightY=clamp(rightY+speed,0,canvas.height-80);
+    else if(rightY+40>ballY) rightY=clamp(rightY-speed,0,canvas.height-80);
   }
 
   if(gameRunning) requestAnimationFrame(draw);
 }
 
+// Ball zurücksetzen & Gewinn prüfen
 function resetBall(){
-  ballX=450; ballY=250;
-  vx*=-1;
+  ballX=450; ballY=250; vx*=-1;
   checkWin();
 }
 
@@ -138,9 +148,7 @@ function checkWin(){
     if(ai && leftScore>rightScore){
       const key="pongHS_"+aiLevel;
       const old=localStorage.getItem(key)||0;
-      if(leftScore>old){
-        localStorage.setItem(key,leftScore);
-      }
+      if(leftScore>old) localStorage.setItem(key,leftScore);
     }
     alert(leftScore>rightScore?"Links gewinnt!":"Rechts gewinnt!");
     updateHighscore();
@@ -149,19 +157,20 @@ function checkWin(){
   }
 }
 
-// Steuerung
+// --- Steuerung ---
 window.addEventListener("keydown",e=>{
-  if(e.key==="w") leftY-=20;
-  if(e.key==="s") leftY+=20;
+  if(e.key==="w") leftY = clamp(leftY-20,0,canvas.height-80);
+  if(e.key==="s") leftY = clamp(leftY+20,0,canvas.height-80);
   if(!ai){
-    if(e.key==="ArrowUp") rightY-=20;
-    if(e.key==="ArrowDown") rightY+=20;
+    if(e.key==="ArrowUp") rightY = clamp(rightY-20,0,canvas.height-80);
+    if(e.key==="ArrowDown") rightY = clamp(rightY+20,0,canvas.height-80);
   }
 });
 
+// Neustart
 document.getElementById("restartBtn").onclick=()=>{
   leftScore=rightScore=0;
-  resetBall();
+  ballX=450; ballY=250; vx=5; vy=3;
   gameRunning=true;
   draw();
 };
