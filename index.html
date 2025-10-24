@@ -152,7 +152,7 @@ function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
 
 // Paddle-Bewegung
 function updatePaddles(){
-  const speed = 5; // Geschwindigkeit pro Frame
+  const speed = 5;
   leftY = clamp(leftY + (keys.s?speed:0) - (keys.w?speed:0), 0, canvas.height-80);
   if(!ai) rightY = clamp(rightY + (keys.down?speed:0) - (keys.up?speed:0), 0, canvas.height-80);
 }
@@ -165,21 +165,22 @@ function updateAI(){
   const errorFactor = aiLevel === "easy" ? 40 : aiLevel === "medium" ? 20 : 8;
   const speed = aiLevel === "easy" ? 3 : aiLevel === "medium" ? 5 : 7;
 
+  // Nur reagieren, wenn Ball auf KI zufliegt
   if (vx > 0) {
-    // Vorhersage: Wo trifft der Ball die KI-Seite?
-    const framesToImpact = (canvas.width - 880 - ballX) / vx;
+    const distanceX = 870 - ballX; // Distanz bis zum Paddle
+    const framesToImpact = distanceX / vx;
     let predictedY = ballY + vy * framesToImpact;
 
-    // Reflektiere Ball, falls er an Wänden abprallt
+    // Simuliere Abpraller von Wänden
     while (predictedY < 0 || predictedY > canvas.height) {
       if (predictedY < 0) predictedY = -predictedY;
       if (predictedY > canvas.height) predictedY = 2 * canvas.height - predictedY;
     }
 
-    // Fehler einbauen
+    // Kleine Ungenauigkeit (je nach Schwierigkeit)
     predictedY += Math.random() * errorFactor * 2 - errorFactor;
 
-    // Paddle Richtung Ziel bewegen
+    // Bewegung zum Ziel
     if (paddleCenter < predictedY - 10) rightY += speed;
     else if (paddleCenter > predictedY + 10) rightY -= speed;
 
